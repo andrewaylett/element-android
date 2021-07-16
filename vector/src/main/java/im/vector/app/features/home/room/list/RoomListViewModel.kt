@@ -30,6 +30,7 @@ import im.vector.app.RoomGroupingMethod
 import im.vector.app.core.extensions.exhaustive
 import im.vector.app.core.platform.VectorViewModel
 import im.vector.app.core.resources.StringProvider
+import im.vector.app.features.invite.AutoAcceptInvites
 import im.vector.app.features.settings.VectorPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -49,7 +50,8 @@ class RoomListViewModel @Inject constructor(
         private val session: Session,
         private val stringProvider: StringProvider,
         private val appStateHandler: AppStateHandler,
-        private val vectorPreferences: VectorPreferences
+        private val vectorPreferences: VectorPreferences,
+        private val autoAcceptInvites: AutoAcceptInvites
 ) : VectorViewModel<RoomListViewState, RoomListAction, RoomListViewEvents>(initialState) {
 
     interface Factory {
@@ -126,6 +128,7 @@ class RoomListViewModel @Inject constructor(
                     appStateHandler,
                     viewModelScope,
                     suggestedRoomJoiningState,
+                    autoAcceptInvites,
                     {
                         it.disposeOnClear()
                     },
@@ -140,6 +143,7 @@ class RoomListViewModel @Inject constructor(
                     stringProvider,
                     viewModelScope,
                     appStateHandler,
+                    autoAcceptInvites,
                     {
                         it.disposeOnClear()
                     },
@@ -161,6 +165,7 @@ class RoomListViewModel @Inject constructor(
             is RoomListAction.ToggleTag                   -> handleToggleTag(action)
             is RoomListAction.ToggleSection               -> handleToggleSection(action.section)
             is RoomListAction.JoinSuggestedRoom           -> handleJoinSuggestedRoom(action)
+            is RoomListAction.ShowRoomDetails             -> handleShowRoomDetails(action)
         }.exhaustive
     }
 
@@ -286,6 +291,12 @@ class RoomListViewModel @Inject constructor(
                     this[action.roomId] = Fail(failure)
                 }.toMap())
             }
+        }
+    }
+
+    private fun handleShowRoomDetails(action: RoomListAction.ShowRoomDetails) {
+        session.permalinkService().createRoomPermalink(action.roomId, action.viaServers)?.let {
+            _viewEvents.post(RoomListViewEvents.NavigateToMxToBottomSheet(it))
         }
     }
 
